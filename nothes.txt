@@ -1,0 +1,16 @@
+poetry init -n
+
+poetry add fastapi
+poetry run python -c "import fastapi"
+
+poetry add httpx
+poetry run python -c "import httpx"
+
+poetry add httpie --dev
+poetry run http --version
+
+poetry add uvicorn
+poetry run uvicorn --version
+
+poetry add pytest --dev
+poetry run pytest --version
