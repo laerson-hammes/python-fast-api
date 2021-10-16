@@ -16,3 +16,14 @@ poetry add pytest --dev
 poetry run pytest --version
 
 python -m pytest tests/
+
+uvicorn --reload api_requests.api:app
+
+poetry add isort --dev
+poetry run isort .
+
+poetry add black --dev
+poetry run black .
+
+poetry add flake8 --dev
+poetry run flake8 .

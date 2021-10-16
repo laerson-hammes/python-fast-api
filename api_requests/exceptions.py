@@ -1,6 +1,6 @@
 class PedidoNaoEncontradoError(Exception):
-   pass
+    pass
 
 
 class FalhaDeComunicacaoError(Exception):
-   pass
+    pass
