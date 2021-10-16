@@ -14,3 +14,5 @@ poetry run uvicorn --version
 
 poetry add pytest --dev
 poetry run pytest --version
+
+python -m pytest tests/
