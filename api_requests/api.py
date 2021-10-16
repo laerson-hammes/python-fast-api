@@ -14,7 +14,7 @@ app = FastAPI()
 
 
 @app.exception_handler(FalhaDeComunicacaoError)
-def tratar_erro_falha_de_comunicacao(
+async def tratar_erro_falha_de_comunicacao(
     request: Request, exc: FalhaDeComunicacaoError
 ):
     return JSONResponse(
@@ -24,7 +24,7 @@ def tratar_erro_falha_de_comunicacao(
 
 
 @app.exception_handler(PedidoNaoEncontradoError)
-def tratar_erro_pedido_nao_encontrado(
+async def tratar_erro_pedido_nao_encontrado(
     request: Request, exc: PedidoNaoEncontradoError
 ):
     return JSONResponse(
@@ -64,5 +64,5 @@ async def healthcheck():
     response_model=list[Item],
 )
 @app.get("/orders/{identificacao_do_pedido}/items")
-def listar_itens(itens: list[Item] = Depends(recuperar_itens_por_pedido)):
+async def listar_itens(itens: list[Item] = Depends(recuperar_itens_por_pedido)):
     return itens

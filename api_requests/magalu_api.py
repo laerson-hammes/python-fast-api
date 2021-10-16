@@ -1,5 +1,7 @@
+import asyncio
 import os
 from http import HTTPStatus
+from itertools import chain
 from uuid import UUID
 
 import httpx
@@ -17,8 +19,8 @@ MAGALU_API_URL = "https://alpha.api.magalu.com"
 MAESTRO_SERVICE_URL = f"{MAGALU_API_URL}/maestro/v1"
 
 
-def _recupera_itens_por_pacote(uuid_do_pedido, uuid_do_pacote):
-    response = httpx.get(
+async def _recupera_itens_por_pacote(uuid_do_pedido, uuid_do_pacote):
+    response = await httpx.get(
         f"{MAESTRO_SERVICE_URL}/orders/{uuid_do_pedido}/packages/{uuid_do_pacote}/items",
         headers={"X-Api-Key": APIKEY, "X-Tenant-Id": TENANT_ID},
     )
@@ -36,25 +38,30 @@ def _recupera_itens_por_pacote(uuid_do_pedido, uuid_do_pacote):
     ]
 
 
-def recuperar_itens_por_pedido(identificacao_do_pedido: UUID) -> list[Item]:
-    try:
-        response = httpx.get(
-            f"{MAESTRO_SERVICE_URL}/orders/{identificacao_do_pedido}",
-            headers={"X-Api-Key": APIKEY, "X-Tenant-Id": TENANT_ID},
-        )
-        response.raise_for_status()
-        pacotes = response.json()["packages"]
-        itens = []
-        for pacote in pacotes:
-            itens.extend(
-                _recupera_itens_por_pacote(
-                    identificacao_do_pedido, pacote["uuid"]
+async def recuperar_itens_por_pedido(
+    identificacao_do_pedido: UUID,
+) -> list[Item]:
+    async with httpx.AsyncClient() as cliente:
+        try:
+            response = await cliente.get(
+                f"{MAESTRO_SERVICE_URL}/orders/{identificacao_do_pedido}",
+                headers={"X-Api-Key": APIKEY, "X-Tenant-Id": TENANT_ID},
+            )
+            response.raise_for_status()
+            pacotes = response.json()["packages"]
+            itens = await asyncio.gather(
+                *(
+                    _recupera_itens_por_pacote(
+                        cliente, identificacao_do_pedido, pacote["uuid"]
+                    )
+                    for pacote in pacotes
                 )
             )
-        return itens
-    except httpx.HTTPStatusError as exc:
-        # aqui poderiam ser tratados outros erros como autenticação
-        if exc.response.status_code == HTTPStatus.NOT_FOUND:
-            raise PedidoNaoEncontradoError() from exc
-    except httpx.HTTPError as exc:
-        raise FalhaDeComunicacaoError() from exc
+            # truque para unir as listas em uma única lista
+            return list(chain.from_iterable(itens))
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == HTTPStatus.NOT_FOUND:
+                raise PedidoNaoEncontradoError() from exc
+        except httpx.HTTPError as exc:
+            # aqui poderiam ser tratados outros erros como autenticação
+            raise FalhaDeComunicacaoError() from exc
